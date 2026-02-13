@@ -1,5 +1,6 @@
 #[macro_use] extern crate tracing;
 
+use std::thread::sleep;
 use clap::Parser;
 use console_subscriber as tokio_console_subscriber;
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
@@ -10,8 +11,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct CliArgs {
     port: String,
     callsign: String,
+    #[arg(short, long)]
     grid: Option<String>,
+    #[arg(short, long)]
     power: Option<i32>,
+    #[arg(short, long)]
     band: Option<i32>,
 }
 
@@ -95,6 +99,8 @@ fn main() {
             std::process::exit(1);
         }
     };
+    // wait 1 second to send config line
+    sleep(std::time::Duration::from_secs(1));
     match fd.write_all(msg.as_bytes()) {
         Ok(_) => {
             let _ =fd.flush();
@@ -105,5 +111,12 @@ fn main() {
             std::process::exit(1);
         }
     };
+    // wait 1 second before attempting to read buffer
+    sleep(std::time::Duration::from_secs(1));
+    let mut buffer = [0u8; 1024];
+    let _ = fd.read(&mut buffer);
+    info!("Read from serial port: {}", String::from_utf8_lossy(&buffer));
+
+
 }
 
